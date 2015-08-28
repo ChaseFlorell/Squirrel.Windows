@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32;
 using Splat;
+using Squirrel.Shell;
 
 namespace Squirrel
 {
@@ -120,6 +121,19 @@ namespace Squirrel
         /// <param name="updateOnly">Set to false during initial install, true 
         /// during app update.</param>
         void CreateShortcutsForExecutable(string exeName, ShortcutLocation locations, bool updateOnly);
+
+        /// <summary>
+        /// Get shortcuts on the Desktop / Start Menu for the given 
+        /// executable. Metadata from the currently installed NuGet package 
+        /// and information from the Version Header of the EXE will be used
+        /// to construct the shortcut folder / name.
+        /// </summary>
+        /// <param name="exeName">The name of the executable, relative to the 
+        /// app install directory.</param>
+        /// <param name="locations">The locations to find the shortcut</param>
+        /// <param name="updateOnly">Set to false during initial install, true 
+        /// during app update.</param>
+        IList<ShellLink> GetShortcutsForExecutable(string exeName, ShortcutLocation locations, bool updateOnly);
 
         /// <summary>
         /// Removes shortcuts created by CreateShortcutsForExecutable

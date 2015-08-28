@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using Microsoft.Win32;
 using NuGet;
 using Splat;
+using Squirrel.Shell;
 
 namespace Squirrel
 {
@@ -113,6 +114,12 @@ namespace Squirrel
         {
             var installHelpers = new ApplyReleasesImpl(rootAppDirectory);
             installHelpers.CreateShortcutsForExecutable(exeName, locations, updateOnly);
+        }
+
+        public IList<ShellLink> GetShortcutsForExecutable(string exeName, ShortcutLocation locations, bool updateOnly)
+        {
+            var installHelpers = new ApplyReleasesImpl(rootAppDirectory);
+            return installHelpers.GetShortcutsForExecutable(exeName, locations, updateOnly);
         }
 
         public void RemoveShortcutsForExecutable(string exeName, ShortcutLocation locations)

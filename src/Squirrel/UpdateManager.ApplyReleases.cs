@@ -125,6 +125,65 @@ namespace Squirrel
                 File.WriteAllText(Path.Combine(rootAppDirectory, ".dead"), " ");
             }
 
+            public IList<ShellLink> GetShortcutsForExecutable(string exeName, ShortcutLocation locations, bool updateOnly)
+            {
+
+                this.Log().Info("About to get all shortcuts for {0}, rootAppDir {1}", exeName, rootAppDirectory);
+
+                var releases = Utility.LoadLocalReleases(Utility.LocalReleaseFileForAppDir(rootAppDirectory));
+                var thisRelease = Utility.FindCurrentVersion(releases);
+                var updateExe = Path.Combine(rootAppDirectory, "update.exe");
+
+                var zf = new ZipPackage(Path.Combine(
+                    Utility.PackageDirectoryForAppDir(rootAppDirectory),
+                    thisRelease.Filename));
+
+                var exePath = Path.Combine(Utility.AppDirForRelease(rootAppDirectory, thisRelease), exeName);
+                var fileVerInfo = FileVersionInfo.GetVersionInfo(exePath);
+
+                var links = new List<ShellLink>();
+                foreach (var f in (ShortcutLocation[])Enum.GetValues(typeof(ShortcutLocation)))
+                {
+                    if (!locations.HasFlag(f)) continue;
+
+                    var file = linkTargetForVersionInfo(f, zf, fileVerInfo);
+                    var fileExists = File.Exists(file);
+
+                    // NB: If we've already installed the app, but the shortcut
+                    // is no longer there, we have to assume that the user didn't
+                    // want it there and explicitly deleted it, so we shouldn't
+                    // annoy them by recreating it.
+                    if (!fileExists && updateOnly)
+                    {
+                        this.Log().Warn("Tried to get shortcut {0} but it appears user deleted it", file);
+                        continue;
+                    }
+
+                    this.Log().Info("Getting shortcut for {0} => {1}", exeName, file);
+
+                    this.ErrorIfThrows(() =>
+                    {
+                        File.Delete(file);
+
+                        var sl = new ShellLink
+                        {
+                            Target = updateExe,
+                            IconPath = exePath,
+                            IconIndex = 0,
+                            WorkingDirectory = Path.GetDirectoryName(exePath),
+                            Description = zf.Description,
+                            Arguments = "--processStart " + exeName,
+                            ShortCutFile = ""
+                        };
+
+                        sl.SetAppUserModelId(String.Format("com.squirrel.{0}.{1}", zf.Id, exeName.Replace(".exe", "")));
+                        
+                        links.Add(sl);
+                    }, "Can't write shortcut: " + file);
+                }
+                return links;
+            }
+
             public void CreateShortcutsForExecutable(string exeName, ShortcutLocation locations, bool updateOnly)
             {
                 this.Log().Info("About to create shortcuts for {0}, rootAppDir {1}", exeName, rootAppDirectory);
